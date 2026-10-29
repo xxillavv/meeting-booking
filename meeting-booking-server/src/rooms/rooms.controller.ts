@@ -23,9 +23,6 @@ export class RoomsController {
     return this.roomsService.findOne(roomId, request.user.sub)
   }
 
-  @Get(':id/bookings')
-  
-
   @Patch(':id')
   updateRoom(
     @Req() request: RequestWithUser,
