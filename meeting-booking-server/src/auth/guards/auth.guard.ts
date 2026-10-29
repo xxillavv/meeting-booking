@@ -3,13 +3,12 @@ import { JwtService } from '@nestjs/jwt';
 import type { Request } from 'express';
 import { ACCESS_TOKEN_COOKIE } from '../auth.constants.js';
 
-export interface JwtPayload {
-  sub: string;
-  email: string;
-}
 
 export interface RequestWithUser extends Request {
-  user: JwtPayload;
+  user: {
+    sub: string
+    email: string
+  };
 }
 
 @Injectable()
@@ -27,7 +26,7 @@ export class AuthGuard implements CanActivate {
     }
 
     try {
-      request.user = await this.jwt.verifyAsync<JwtPayload>(token)
+      request.user = await this.jwt.verifyAsync<{ sub: string, email: string }>(token)
     } catch {
       throw new UnauthorizedException('Invalid or expired token')
     }
