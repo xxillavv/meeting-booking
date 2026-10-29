@@ -2,8 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { TUser } from "@/hooks/auth/auth.types";
-
-export const ACCESS_TOKEN_COOKIE = "access_token";
+import { ACCESS_TOKEN_COOKIE } from "./constants";
 
 export const getMe = async (): Promise<TUser> => {
   const token = (await cookies()).get(ACCESS_TOKEN_COOKIE)?.value;
