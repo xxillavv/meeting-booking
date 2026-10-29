@@ -5,3 +5,10 @@ export type TRegisterUser = {
 }
 
 export type TLoginUser = Omit<TRegisterUser, 'name'>
+
+export type TUser = {
+  id: string
+  name: string
+  email: string
+  createdAt: string
+}
