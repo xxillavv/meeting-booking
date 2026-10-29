@@ -19,3 +19,11 @@ export const updateBooking = async (id: string, body: TUpdateBooking): Promise<v
 export const cancelBooking = async (id: string): Promise<void> => {
   await api.delete(`/bookings/${id}`);
 };
+
+export const joinBooking = async (id: string): Promise<void> => {
+  await api.post(`/bookings/${id}/participants`);
+};
+
+export const leaveBooking = async (id: string): Promise<void> => {
+  await api.delete(`/bookings/${id}/participants`);
+};

@@ -3,6 +3,8 @@ import {
   cancelBooking,
   createBooking,
   getBookings,
+  joinBooking,
+  leaveBooking,
   updateBooking,
 } from "./bookings.service";
 import { TUpdateBooking } from "./bookings.types";
@@ -39,9 +41,21 @@ export const useBookingMutations = (roomId: string) => {
     onSuccess: refreshBookings,
   });
 
+  const joinMutation = useMutation({
+    mutationFn: joinBooking,
+    onSuccess: refreshBookings,
+  });
+
+  const leaveMutation = useMutation({
+    mutationFn: leaveBooking,
+    onSuccess: refreshBookings,
+  });
+
   return {
     create: createMutation,
     update: updateMutation,
     cancel: cancelMutation,
+    join: joinMutation,
+    leave: leaveMutation,
   };
 };

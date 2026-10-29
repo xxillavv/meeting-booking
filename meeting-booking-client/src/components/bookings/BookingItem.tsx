@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { TBooking } from "@/hooks/bookings/bookings.types";
 import { formatTimeRange } from "@/lib/dates";
 import { BookingActions } from "./BookingActions";
+import { JoinBookingButton } from "./JoinBookingButton";
 
 type BookingItemProps = {
   roomId: string;
@@ -34,7 +35,10 @@ export const BookingItem = ({
         </p>
       </div>
 
-      {isAdmin && <BookingActions roomId={roomId} booking={booking} />}
+      <div className="flex shrink-0 items-center gap-1">
+        <JoinBookingButton roomId={roomId} booking={booking} />
+        {isAdmin && <BookingActions roomId={roomId} booking={booking} />}
+      </div>
     </li>
   );
 };
