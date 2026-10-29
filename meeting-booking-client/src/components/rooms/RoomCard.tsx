@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { UsersIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardDescription,
@@ -9,10 +8,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { TRoomWithCount } from "@/hooks/rooms/rooms.types";
+import { RoleBadge } from "./RoleBadge";
 
 export const RoomCard = ({ room }: { room: TRoomWithCount }) => {
-  const isAdmin = room.role === "ADMIN";
-
   return (
     <Link href={`/rooms/${room.id}`} className="group">
       <Card className="h-full transition-colors group-hover:bg-muted/50">
@@ -28,9 +26,7 @@ export const RoomCard = ({ room }: { room: TRoomWithCount }) => {
             <UsersIcon className="size-4" />
             {room._count.members}
           </span>
-          <Badge variant={isAdmin ? "default" : "secondary"}>
-            {isAdmin ? "Адмін" : "Учасник"}
-          </Badge>
+          <RoleBadge role={room.role} />
         </CardFooter>
       </Card>
     </Link>

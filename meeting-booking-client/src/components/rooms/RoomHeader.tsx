@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeftIcon, UsersIcon } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { TRoomWithCount } from "@/hooks/rooms/rooms.types";
+import { RoleBadge } from "./RoleBadge";
 import { DeleteRoomDialog } from "./DeleteRoomDialog";
 import { EditRoomDialog } from "./EditRoomDialog";
 
@@ -22,9 +22,7 @@ export const RoomHeader = ({ room }: { room: TRoomWithCount }) => {
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold">{room.name}</h1>
-            <Badge variant={isAdmin ? "default" : "secondary"}>
-              {isAdmin ? "Адмін" : "Учасник"}
-            </Badge>
+            <RoleBadge role={room.role} />
           </div>
           {room.description && (
             <p className="max-w-2xl text-muted-foreground">{room.description}</p>
