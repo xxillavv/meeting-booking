@@ -8,6 +8,10 @@ export interface JwtPayload {
   email: string;
 }
 
+export interface RequestWithUser extends Request {
+  user: JwtPayload;
+}
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(private readonly jwt: JwtService) { }
@@ -15,7 +19,7 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const http = context.switchToHttp()
 
-    const request = http.getRequest<Request & { user?: JwtPayload }>()
+    const request = http.getRequest<RequestWithUser>()
 
     const token: unknown = request.cookies?.[ACCESS_TOKEN_COOKIE]
     if (typeof token !== 'string') {
