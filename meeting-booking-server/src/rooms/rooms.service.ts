@@ -4,11 +4,6 @@ import { RoomRole } from '../generated/prisma/enums.js';
 import { RoomAccessService } from './room-access.service.js';
 import { AddMemberDto, CreateRoomDto, UpdateMemberRoleDto, UpdateRoomDto } from './dto/room.dto.js';
 
-const memberUserSelect = {
-  id: true,
-  name: true,
-  email: true
-} as const
 
 @Injectable()
 export class RoomsService {
@@ -88,7 +83,13 @@ export class RoomsService {
       select: {
         role: true,
         createdAt: true,
-        user: { select: memberUserSelect }
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
       },
       orderBy: { createdAt: 'asc' }
     })
@@ -121,7 +122,13 @@ export class RoomsService {
       select: {
         role: true,
         createdAt: true,
-        user: { select: memberUserSelect }
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
       }
     })
   }
@@ -143,7 +150,13 @@ export class RoomsService {
       select: {
         role: true,
         createdAt: true,
-        user: { select: memberUserSelect }
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
       }
     })
   }
