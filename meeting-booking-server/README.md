@@ -67,6 +67,8 @@ pnpm start:dev              # http://localhost:3001
 
 ## Docker
 
+Найпростіше запустити весь стек (база + бекенд + фронтенд) через [`docker-compose.yml` у корені репозиторію](../README.md#швидкий-старт-через-docker). Нижче — як зібрати й запустити лише образ бекенду.
+
 ```bash
 docker build -t meeting-booking-server .
 

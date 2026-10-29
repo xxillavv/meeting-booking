@@ -1,36 +1,184 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Meeting Booking — Frontend
 
-## Getting Started
+Веб-інтерфейс для бронювання переговорних кімнат. Користувачі реєструються, створюють кімнати, додають до них колег за email з ролями та бронюють кімнати на конкретний час. Працює з [REST API на NestJS](../meeting-booking-server/README.md).
 
-First, run the development server:
+## Стек
+
+- **Next.js 16** (App Router, Cache Components, React Compiler) + **TypeScript** (strict)
+- **React 19**
+- **Tailwind CSS 4** + **shadcn/ui** (примітиви Base UI) + **lucide-react**
+- **TanStack Query** — серверний стан на клієнті
+- **axios** — HTTP-клієнт
+- **react-hook-form** + **zod** — форми та валідація
+- **sonner** — тости
+
+Кожна бібліотека закриває конкретну задачу, без зайвих залежностей: глобального стору немає, бо поточний користувач читається на сервері, а списки живуть у кеші TanStack Query. Дати форматуються вбудованим `Intl.DateTimeFormat`, без `date-fns`.
+
+## Швидкий старт
+
+### 1. Вимоги
+
+- Node.js 24+
+- pnpm 10+
+- запущений [бекенд](../meeting-booking-server/README.md) на `http://localhost:3001`
+
+### 2. Змінні оточення
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Змінна | Опис | Приклад |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | адреса бекенду для браузера | `http://localhost:3001` |
+| `API_URL` | адреса бекенду для серверних запитів Next (необов'язково, за замовчуванням `NEXT_PUBLIC_API_URL`) | `http://server:3001` |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Змінна з префіксом `NEXT_PUBLIC_` вшивається в клієнтський бандл під час старту, тому після її зміни треба перезапустити `pnpm dev`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`API_URL` потрібна, коли браузер і сервер Next бачать бекенд за різними адресами. Наприклад, у Docker: браузер ходить на `localhost:3001`, а контейнер клієнта — на `server:3001`.
 
-## Learn More
+На бекенді `CLIENT_URL` має збігатися з адресою фронтенду (`http://localhost:3000`), інакше браузер заблокує запити через CORS.
 
-To learn more about Next.js, take a look at the following resources:
+### 3. Встановлення та запуск
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm install
+pnpm dev        # http://localhost:3000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Скрипти
 
-## Deploy on Vercel
+| Команда | Що робить |
+|---|---|
+| `pnpm dev` | запуск у режимі розробки |
+| `pnpm build` | production-збірка |
+| `pnpm start` | запуск зібраної версії |
+| `pnpm lint` | перевірка коду (ESLint) |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Docker
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Найпростіше запустити весь стек (база + бекенд + фронтенд) через [`docker-compose.yml` у корені репозиторію](../README.md#швидкий-старт-через-docker). Нижче — як зібрати й запустити лише образ фронтенду.
+
+Образ збирається в режимі `output: "standalone"`: у фінальний образ потрапляє лише мінімальний `server.js` і потрібна частина `node_modules`.
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=http://localhost:3001 \
+  -t meeting-booking-client .
+
+docker run -p 3000:3000 \
+  -e API_URL=http://host.docker.internal:3001 \
+  --add-host=host.docker.internal:host-gateway \
+  meeting-booking-client
+```
+
+`NEXT_PUBLIC_API_URL` передається як `--build-arg`, бо вшивається в бандл під час збірки. `API_URL` читається під час запуску.
+
+## Сторінки
+
+| Маршрут | Доступ | Що на ній |
+|---|---|---|
+| `/` | — | перенаправляє на `/rooms` |
+| `/login` | гість | вхід |
+| `/register` | гість | реєстрація |
+| `/rooms` | авторизований | мої кімнати з роллю, створення кімнати |
+| `/rooms/[id]` | учасник кімнати | деталі кімнати, бронювання, учасники |
+
+## Автентифікація
+
+Бекенд після логіну ставить `httpOnly` cookie `access_token`. JavaScript її не бачить, тому токен не можна вкрасти через XSS. Браузер сам надсилає її з кожним запитом (`withCredentials: true` в axios).
+
+Захист працює у два шари:
+
+1. **`src/proxy.ts`** — швидка перевірка перед рендером: якщо cookie немає, перенаправляє з `/rooms/*` на `/login`.
+2. **`getMe()`** — справжня перевірка токена на бекенді під час рендеру. Якщо токен прострочений або невалідний (`401`), перенаправляє на `/login`.
+
+Proxy свідомо не перенаправляє з `/login` на `/rooms` за наявністю cookie: з простроченим токеном це дало б нескінченний цикл редиректів.
+
+## Як читаються дані
+
+| Дані | Де | Чому |
+|---|---|---|
+| Поточний користувач | сервер (`getMe`) | від нього залежить доступ і редирект, ім'я в хедері без блимання |
+| Список кімнат, кімната | сервер (`getRooms`, `getRoom`) | роль відома до рендеру, тож кнопки адміна не блимають; `notFound()` для чужої кімнати; назва кімнати у вкладці |
+| Учасники, бронювання | клієнт (TanStack Query) | часто змінюються прямо на сторінці; після мутації оновлюється лише потрібний список |
+
+Серверні запити йдуть через `serverFetch` (`src/lib/server-api.ts`): він передає cookie бекенду й обробляє `401` → `/login` та `404` → `notFound()`.
+
+Після мутацій:
+- серверні дані оновлюються через `router.refresh()`;
+- клієнтські — через `invalidateQueries` за ключами `["rooms", roomId, "members"]` та `["rooms", roomId, "bookings"]`.
+
+## Ролі в інтерфейсі
+
+Права перевіряє бекенд, а фронтенд лише ховає недоступні дії.
+
+| Дія | `ADMIN` | `USER` |
+|---|:---:|:---:|
+| Переглядати кімнату, учасників, бронювання | ✅ | ✅ |
+| Долучатися до бронювань / виходити з них | ✅ | ✅ |
+| Редагувати / видаляти кімнату | ✅ | ❌ |
+| Керувати учасниками | ✅ | ❌ |
+| Створювати / редагувати / скасовувати бронювання | ✅ | ❌ |
+
+## Обробка помилок
+
+- **Валідація форм** — zod-схеми з тими самими обмеженнями, що й DTO на бекенді; помилки під полями.
+- **Помилки сервера** — тости. Статуси перекладаються на зрозумілі повідомлення:
+  - `401` на логіні → «Невірний email або пароль»
+  - `409` на реєстрації → «Цей email уже зареєстровано»
+  - `404` / `409` при додаванні учасника → «Користувача не знайдено» / «Уже є в кімнаті»
+  - `400` при зміні ролі → «У кімнаті має залишитися хоча б один адмін»
+  - `409` при бронюванні → «Цей час уже зайнятий іншим бронюванням»
+- **Стани** — скелетони під час завантаження, повідомлення з кнопкою повтору при помилці, порожні стани для списків, `not-found.tsx` для неіснуючої кімнати.
+
+## Структура
+
+```
+src/
+├── app/
+│   ├── (auth)/             # /login, /register — центрований layout без хедера
+│   ├── (app)/              # захищені сторінки з хедером
+│   │   └── rooms/
+│   │       ├── page.tsx    # список кімнат
+│   │       ├── error.tsx
+│   │       └── [id]/       # сторінка кімнати + loading / not-found
+│   ├── layout.tsx          # шрифти, metadata, провайдери
+│   └── icon.svg
+├── components/
+│   ├── ui/                 # компоненти shadcn/ui
+│   ├── auth/               # форми логіну та реєстрації
+│   ├── layout/             # хедер, меню користувача
+│   ├── rooms/              # картки, шапка кімнати, діалоги
+│   ├── members/            # список учасників і дії з ними
+│   ├── bookings/           # список бронювань, форма, дії
+│   └── Provider.tsx        # QueryClient + Toaster
+├── hooks/                  # по папці на сутність
+│   └── <entity>/
+│       ├── *.types.ts      # типи відповідей і запитів
+│       ├── *.service.ts    # axios-запити
+│       ├── *.hook.ts       # useQuery / useMutation
+│       └── *.schemas.ts    # zod-схеми форм
+├── lib/
+│   ├── axios.ts            # axios-інстанс
+│   ├── server-api.ts       # serverFetch для Server Components
+│   ├── auth.ts, rooms.ts   # серверні запити
+│   ├── errors.ts           # getErrorMessage / getErrorStatus
+│   └── dates.ts            # форматування дат і перетворення UTC ↔ місцевий час
+└── proxy.ts                # редирект неавторизованих на /login
+```
+
+## Дати й час
+
+Бекенд зберігає час в UTC (ISO 8601), а користувач бачить і вводить місцевий. `src/lib/dates.ts` перетворює значення полів `date` + `time` в ISO і назад, а також форматує час українською: «14:00–15:30», «Сьогодні, 29 жовтня», «неділя, 1 листопада».
+
+Бронювання створюється в межах одного дня. При редагуванні час відправляється на бекенд лише тоді, коли його змінили: інакше бекенд відхилив би бронювання, яке вже триває, бо його початок у минулому.
+
+## Що можна покращити
+
+- Оптимістичні оновлення для «Долучитися» / «Вийти» — без очікування відповіді сервера.
+- Календарний вигляд бронювань (тиждень / день) і бронювання на кілька днів.
+- Показувати вільні слоти кімнати при виборі часу.
+- Темна тема (змінні в `globals.css` уже є, бракує перемикача).
+- e2e-тести на Playwright: логін, створення бронювання, конфлікт часу, ролі.
+- Refresh-токени разом із бекендом, щоб сесія не обривалася після закінчення терміну дії токена.

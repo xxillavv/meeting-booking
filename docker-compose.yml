@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secret}
+      POSTGRES_DB: booking
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d booking"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build: ./meeting-booking-server
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-secret}@db:5432/booking?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      CLIENT_URL: http://localhost:${CLIENT_PORT:-3000}
+    ports:
+      - "${SERVER_PORT:-3001}:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  client:
+    build:
+      context: ./meeting-booking-client
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:${SERVER_PORT:-3001}
+    environment:
+      API_URL: http://server:3001
+    ports:
+      - "${CLIENT_PORT:-3000}:3000"
+    depends_on:
+      - server
+
+volumes:
+  db-data:
