@@ -33,6 +33,8 @@
 .
 ├── meeting-booking-client/   # Next.js — інтерфейс
 ├── meeting-booking-server/   # NestJS — REST API
+├── docker-compose.yml        # PostgreSQL + backend + frontend
+├── .env.example              # змінні для docker compose
 └── README.md
 ```
 
@@ -41,13 +43,33 @@
 - [Frontend README](meeting-booking-client/README.md) — сторінки, автентифікація, як читаються дані, структура.
 - [Backend README](meeting-booking-server/README.md) — API-ендпоінти, правила бронювання, коди відповідей.
 
-## Швидкий старт
+## Швидкий старт через Docker
+
+Потрібен лише Docker. Весь стек — база, бекенд і фронтенд — піднімається однією командою:
+
+```bash
+cp .env.example .env    # необов'язково: без .env підставляться значення за замовчуванням
+docker compose up --build
+```
+
+- Frontend: [http://localhost:3000](http://localhost:3000)
+- Backend: [http://localhost:3001](http://localhost:3001)
+
+Міграції застосовуються автоматично під час старту бекенду. Дані бази зберігаються у volume `db-data` і переживають перезапуск. Щоб зупинити стек і видалити дані:
+
+```bash
+docker compose down -v
+```
+
+Якщо порти 3000 або 3001 зайняті, змініть `CLIENT_PORT` і `SERVER_PORT` у `.env` — адреси для CORS і бандла фронтенду підлаштуються самі.
+
+## Запуск без Docker
 
 ### 1. Вимоги
 
 - Node.js 24+
 - pnpm 10+
-- Docker (для PostgreSQL) або локальний PostgreSQL 16+
+- PostgreSQL 16+ (локально або в Docker)
 
 ### 2. База даних
 
@@ -86,6 +108,18 @@ pnpm dev                    # http://localhost:3000
 
 ## Змінні оточення
 
+### Docker compose (`.env` у корені)
+
+| Змінна | Опис | За замовчуванням |
+|---|---|---|
+| `JWT_SECRET` | секрет для підпису токенів | `change-me-in-production` |
+| `JWT_EXPIRES_IN` | термін дії токена | `1d` |
+| `POSTGRES_PASSWORD` | пароль бази | `secret` |
+| `CLIENT_PORT` | порт фронтенду на хості | `3000` |
+| `SERVER_PORT` | порт бекенду на хості | `3001` |
+
+### Без Docker (`.env` у кожній частині)
+
 | Частина | Змінна | Опис | Значення за замовчуванням |
 |---|---|---|---|
 | Backend | `PORT` | порт API | `3001` |
@@ -93,7 +127,8 @@ pnpm dev                    # http://localhost:3000
 | Backend | `JWT_SECRET` | секрет для підпису токенів | — |
 | Backend | `JWT_EXPIRES_IN` | термін дії токена | `1d` |
 | Backend | `CLIENT_URL` | адреса фронтенду для CORS | `http://localhost:3000` |
-| Frontend | `NEXT_PUBLIC_API_URL` | адреса бекенду | `http://localhost:3001` |
+| Frontend | `NEXT_PUBLIC_API_URL` | адреса бекенду для браузера | `http://localhost:3001` |
+| Frontend | `API_URL` | адреса бекенду для серверних запитів Next (необов'язково) | `NEXT_PUBLIC_API_URL` |
 
 `CLIENT_URL` на бекенді має точно збігатися з адресою фронтенду, інакше браузер заблокує запити через CORS.
 
@@ -107,7 +142,6 @@ pnpm dev                    # http://localhost:3000
 
 ## Що можна покращити
 
-- `docker-compose` для запуску всього стеку однією командою.
 - Refresh-токени з ротацією.
 - Захист від одночасного бронювання того самого слоту на рівні БД (`EXCLUDE USING gist`).
 - Календарний вигляд бронювань і підказка вільних слотів.
