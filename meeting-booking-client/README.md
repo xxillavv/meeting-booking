@@ -30,9 +30,12 @@ cp .env.example .env
 
 | Змінна | Опис | Приклад |
 |---|---|---|
-| `NEXT_PUBLIC_API_URL` | адреса бекенду | `http://localhost:3001` |
+| `NEXT_PUBLIC_API_URL` | адреса бекенду для браузера | `http://localhost:3001` |
+| `API_URL` | адреса бекенду для серверних запитів Next (необов'язково, за замовчуванням `NEXT_PUBLIC_API_URL`) | `http://server:3001` |
 
 Змінна з префіксом `NEXT_PUBLIC_` вшивається в клієнтський бандл під час старту, тому після її зміни треба перезапустити `pnpm dev`.
+
+`API_URL` потрібна, коли браузер і сервер Next бачать бекенд за різними адресами. Наприклад, у Docker: браузер ходить на `localhost:3001`, а контейнер клієнта — на `server:3001`.
 
 На бекенді `CLIENT_URL` має збігатися з адресою фронтенду (`http://localhost:3000`), інакше браузер заблокує запити через CORS.
 
@@ -51,6 +54,23 @@ pnpm dev        # http://localhost:3000
 | `pnpm build` | production-збірка |
 | `pnpm start` | запуск зібраної версії |
 | `pnpm lint` | перевірка коду (ESLint) |
+
+## Docker
+
+Образ збирається в режимі `output: "standalone"`: у фінальний образ потрапляє лише мінімальний `server.js` і потрібна частина `node_modules`.
+
+```bash
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=http://localhost:3001 \
+  -t meeting-booking-client .
+
+docker run -p 3000:3000 \
+  -e API_URL=http://host.docker.internal:3001 \
+  --add-host=host.docker.internal:host-gateway \
+  meeting-booking-client
+```
+
+`NEXT_PUBLIC_API_URL` передається як `--build-arg`, бо вшивається в бандл під час збірки. `API_URL` читається під час запуску.
 
 ## Сторінки
 

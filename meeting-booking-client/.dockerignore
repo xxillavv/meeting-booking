@@ -1,0 +1,10 @@
+node_modules
+.next
+.env
+.env.local
+.git
+*.tsbuildinfo
+.playwright-mcp
+.claude
+Dockerfile
+.dockerignore
