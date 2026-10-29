@@ -1,124 +1,183 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Meeting Booking — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+REST API для бронювання переговорних кімнат. Користувачі створюють кімнати, додають до них колег за email з ролями та бронюють кімнати на конкретний час із перевіркою конфліктів.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Стек
 
-## Description
+- **NestJS 12** + **TypeScript** (strict, ESM)
+- **Prisma 7** + **PostgreSQL** (driver adapter `@prisma/adapter-pg`)
+- **JWT** (`@nestjs/jwt`) в `httpOnly` cookie
+- **bcrypt** для хешування паролів
+- **class-validator** / **class-transformer** для валідації DTO
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Швидкий старт
 
-## Project setup
+### 1. Вимоги
+
+- Node.js 24+
+- pnpm 10+
+- PostgreSQL 16+ (локально або в Docker)
+
+### 2. Змінні оточення
 
 ```bash
-$ pnpm install
+cp .env.example .env
 ```
 
-## Compile and run the project
+| Змінна | Опис | Приклад |
+|---|---|---|
+| `PORT` | порт API | `3001` |
+| `DATABASE_URL` | рядок підключення до PostgreSQL | `postgresql://postgres:secret@localhost:5432/booking?schema=public` |
+| `JWT_SECRET` | секрет для підпису токенів | довгий випадковий рядок |
+| `JWT_EXPIRES_IN` | термін дії токена | `1d` |
+| `CLIENT_URL` | адреса фронтенду для CORS (необов'язково) | `http://localhost:3000` |
+
+### 3. База даних
+
+Якщо PostgreSQL ще немає, найпростіше підняти його в Docker:
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+docker run -d --name booking-db \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=secret \
+  -e POSTGRES_DB=booking \
+  -p 5432:5432 \
+  postgres:16
 ```
 
-## Run tests
+### 4. Встановлення та запуск
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm install
+pnpm prisma generate        # генерує Prisma Client у src/generated
+pnpm prisma migrate dev     # застосовує міграції
+pnpm start:dev              # http://localhost:3001
 ```
 
-## Deployment
+## Скрипти
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+| Команда | Що робить |
+|---|---|
+| `pnpm start:dev` | запуск у режимі розробки з hot reload |
+| `pnpm build` | збірка в `dist/` |
+| `pnpm start:prod` | запуск зібраної версії |
+| `pnpm lint` | перевірка коду (oxlint) |
+| `pnpm prisma migrate dev` | створити / застосувати міграції |
+| `pnpm prisma studio` | переглянути базу в браузері |
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Docker
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+docker build -t meeting-booking-server .
+
+docker run -p 3001:3001 \
+  -e DATABASE_URL=postgresql://postgres:secret@host.docker.internal:5432/booking?schema=public \
+  -e JWT_SECRET=change-me \
+  -e JWT_EXPIRES_IN=1d \
+  meeting-booking-server
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Під час старту контейнер сам застосовує міграції (`prisma migrate deploy`).
 
-## Observability
+## Автентифікація
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+Після реєстрації або логіну сервер ставить cookie `access_token` (`httpOnly`, `sameSite=lax`). Усі захищені ендпоінти читають токен із неї, тому фронтенд має надсилати запити з `credentials: 'include'`.
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+## Ролі
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+Ролі прив'язані до конкретної кімнати: користувач може бути `ADMIN` в одній кімнаті й `USER` в іншій. Творець кімнати автоматично стає `ADMIN`.
 
-To add it to this project:
+| Дія | `ADMIN` | `USER` |
+|---|:---:|:---:|
+| Переглядати кімнату, учасників, бронювання | ✅ | ✅ |
+| Долучатися до бронювань / виходити з них | ✅ | ✅ |
+| Редагувати / видаляти кімнату | ✅ | ❌ |
+| Керувати учасниками кімнати | ✅ | ❌ |
+| Створювати / редагувати / скасовувати бронювання | ✅ | ❌ |
 
-```bash
-$ pnpm install @nestjs/observe
+Користувач, який не є учасником кімнати, отримує `404`: так не розкривається навіть факт існування кімнати.
+
+## API
+
+Усі ендпоінти, крім `register` і `login`, потребують автентифікації.
+
+### Auth
+
+| Метод | Ендпоінт | Опис |
+|---|---|---|
+| `POST` | `/auth/register` | реєстрація `{ name, email, password }` |
+| `POST` | `/auth/login` | вхід `{ email, password }` |
+| `POST` | `/auth/logout` | вихід (очищує cookie) |
+
+### Users
+
+| Метод | Ендпоінт | Опис |
+|---|---|---|
+| `GET` | `/users/me` | поточний користувач |
+
+### Rooms
+
+| Метод | Ендпоінт | Хто | Опис |
+|---|---|---|---|
+| `POST` | `/rooms` | будь-хто | створити кімнату `{ name, description? }` |
+| `GET` | `/rooms` | будь-хто | мої кімнати з моєю роллю |
+| `GET` | `/rooms/:id` | учасник | кімната |
+| `PATCH` | `/rooms/:id` | `ADMIN` | оновити кімнату |
+| `DELETE` | `/rooms/:id` | `ADMIN` | видалити кімнату |
+| `GET` | `/rooms/:id/members` | учасник | учасники кімнати |
+| `POST` | `/rooms/:id/members` | `ADMIN` | додати учасника `{ email, role }` |
+| `PATCH` | `/rooms/:id/members/:userId` | `ADMIN` | змінити роль `{ role }` |
+| `DELETE` | `/rooms/:id/members/:userId` | `ADMIN` | видалити учасника |
+
+### Bookings
+
+| Метод | Ендпоінт | Хто | Опис |
+|---|---|---|---|
+| `GET` | `/bookings?roomId=` | учасник | поточні й майбутні бронювання кімнати |
+| `POST` | `/bookings` | `ADMIN` | створити `{ roomId, startTime, endTime, description? }` |
+| `PATCH` | `/bookings/:id` | `ADMIN` | змінити час або опис |
+| `DELETE` | `/bookings/:id` | `ADMIN` | скасувати бронювання |
+| `POST` | `/bookings/:id/participants` | учасник | долучитися до бронювання |
+| `DELETE` | `/bookings/:id/participants` | учасник | вийти з бронювання |
+
+Дати передаються у форматі ISO 8601, наприклад `2026-10-30T14:00:00.000Z`.
+
+### Правила бронювання
+
+- `startTime` має бути раніше за `endTime`.
+- Не можна створити бронювання в минулому.
+- Бронювання однієї кімнати не можуть перетинатися: інтервали конфліктують, якщо `newStart < existingEnd && newEnd > existingStart`. При редагуванні саме бронювання з перевірки виключається.
+- Творець бронювання автоматично стає його учасником.
+
+### Коди відповідей
+
+| Код | Коли |
+|---|---|
+| `400` | невалідні дані, некоректний час, спроба прибрати останнього `ADMIN` |
+| `401` | немає або прострочений токен, невірний логін / пароль |
+| `403` | недостатньо прав у кімнаті |
+| `404` | ресурс не знайдено або немає доступу до кімнати |
+| `409` | email зайнятий, учасник уже доданий, конфлікт часу бронювання |
+
+## Структура
+
+```
+prisma/
+├── schema.prisma           # generator + datasource
+├── models/                 # моделі, розбиті по файлах
+└── migrations/
+src/
+├── auth/                   # реєстрація, логін, JWT guard
+├── users/                  # поточний користувач
+├── rooms/                  # кімнати, учасники, перевірка ролей (RoomAccessService)
+├── bookings/               # бронювання, конфлікти часу, участь
+└── prisma/                 # PrismaService / PrismaModule
 ```
 
-Then follow the [setup guide](https://docs.nestjs.com/observability/overview) - it takes a single import and an app key.
+## Що можна покращити
 
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Refresh-токени з ротацією.
+- Захист від одночасного бронювання того самого слоту на рівні БД (exclusion constraint `EXCLUDE USING gist` або транзакція з `Serializable`).
+- e2e-тести на сценарії з ролями й конфліктами.
+- Swagger-документація.
+- Менший Docker-образ (лише production-залежності).
