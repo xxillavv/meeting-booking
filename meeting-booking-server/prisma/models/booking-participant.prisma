@@ -1,0 +1,12 @@
+model BookingParticipant {
+  bookingId String   @map("booking_id")
+  userId    String   @map("user_id")
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([bookingId, userId])
+  @@index([userId])
+  @@map("booking_participants")
+}
