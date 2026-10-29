@@ -1,0 +1,6 @@
+enum RoomRole {
+  ADMIN
+  USER
+
+  @@map("room_role")
+}
