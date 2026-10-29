@@ -4,6 +4,7 @@ import { JwtModule, JwtModuleOptions, JwtSignOptions } from '@nestjs/jwt';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
+import { RoomsModule } from './rooms/rooms.module.js';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { UsersModule } from './users/users.module.js';
     PrismaModule,
     AuthModule,
     UsersModule,
+    RoomsModule,
   ],
   controllers: [],
   providers: [],
