@@ -17,7 +17,13 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/auth/auth.hook";
 import { loginSchema } from "@/hooks/auth/auth.schemas";
 import { TLoginUser } from "@/hooks/auth/auth.types";
-import { getErrorMessage } from "@/lib/errors";
+import { getErrorMessage, getErrorStatus } from "@/lib/errors";
+
+const getLoginError = (error: unknown) => {
+  if (getErrorStatus(error) === 401) return "Невірний email або пароль";
+
+  return getErrorMessage(error);
+};
 
 export const LoginForm = () => {
   const { login } = useAuth();
@@ -32,7 +38,7 @@ export const LoginForm = () => {
 
   const onSubmit = (values: TLoginUser) => {
     login.mutate(values, {
-      onError: (error) => toast.error(getErrorMessage(error)),
+      onError: (error) => toast.error(getLoginError(error)),
     });
   };
 
