@@ -17,7 +17,13 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/auth/auth.hook";
 import { registerSchema } from "@/hooks/auth/auth.schemas";
 import { TRegisterUser } from "@/hooks/auth/auth.types";
-import { getErrorMessage } from "@/lib/errors";
+import { getErrorMessage, getErrorStatus } from "@/lib/errors";
+
+const getRegisterError = (error: unknown) => {
+  if (getErrorStatus(error) === 409) return "Цей email уже зареєстровано";
+
+  return getErrorMessage(error);
+};
 
 export const RegisterForm = () => {
   const { register: registerUser } = useAuth();
@@ -32,7 +38,7 @@ export const RegisterForm = () => {
 
   const onSubmit = (values: TRegisterUser) => {
     registerUser.mutate(values, {
-      onError: (error) => toast.error(getErrorMessage(error)),
+      onError: (error) => toast.error(getRegisterError(error)),
     });
   };
 
